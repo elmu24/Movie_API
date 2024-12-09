@@ -1,51 +1,55 @@
 -- Active: 1731676718089@@127.0.0.1@5432@postgres@public
 -- Active: 1731676718089@@127.0.0.1@5432@postgres@public
-CREATE TABLE Genre (
-    GenreID INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    Name VARCHAR(50) NOT NULL
+CREATE TABLE genre (
+    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
+    name VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
 );
 
-CREATE TABLE FavoriteMovie (
-    FavoriteMovieID INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    Title VARCHAR(50) NOT NULL
+CREATE TABLE favoriteMovie (
+    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
+    title VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
 );
 
-CREATE TABLE User (
-    UserID INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    FavoriteMovieID INT,
-    Name VARCHAR(50) NOT NULL,
-    Username VARCHAR(50) UNIQUE NOT NULL,
-    Password VARCHAR(50) NOT NULL,
-    Birthyear INT,
-    FOREIGN KEY (FavoriteMovieID) REFERENCES FavoriteMovie(FavoriteMovieID)
+CREATE TABLE costumer(
+    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
+    PRIMARY KEY (id),
+    name VARCHAR(50) NOT NULL,
+    password VARCHAR(50) NOT NULL,
+    birthyear INT,
+    favoriteMovie_id INT,
+    FOREIGN KEY (favoriteMovie_id) REFERENCES favoriteMovie(id)
 );
 
-CREATE TABLE Movie (
-    MovieID INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    GenreID INT,
-    Name VARCHAR(50) NOT NULL,
-    Year INT,
-    UserID INT,
-    FOREIGN KEY (GenreID) REFERENCES Genre(GenreID),
-    FOREIGN KEY (UserID) REFERENCES User(UserID)
+CREATE TABLE movie (
+    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
+    genre_id INT,
+    name VARCHAR(50) NOT NULL,
+    year INT,
+    costumer_id INT,
+    PRIMARY KEY (id),
+    FOREIGN KEY (genre_id) REFERENCES genre(id),
+    FOREIGN KEY (costumer_id) REFERENCES costumer(id)
 );
 
-CREATE TABLE Review (
-    ReviewID INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    MovieID INT,
-    UserID INT,
+CREATE TABLE review (
+    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
+    movie_id INT,
+    costumer_id INT,
     Stars INT CHECK (Stars BETWEEN 1 AND 5),
-    ReviewText VARCHAR(50),
-    FOREIGN KEY (MovieID) REFERENCES Movie(MovieID),
-    FOREIGN KEY (UserID) REFERENCES User(UserID)
+    ReviewText VARCHAR(5000),
+    PRIMARY KEY (id),
+    FOREIGN KEY (movie_id) REFERENCES movie(id),
+    FOREIGN KEY (costumer_id) REFERENCES costumer(id)
 );
 
-CREATE TABLE Connection_table (
-    FavoriteMovieID INT NOT NULL,
-    MovieID INT NOT NULL,
-    PRIMARY KEY (FavoriteMovieID, MovieID),
-    FOREIGN KEY (FavoriteMovieID) REFERENCES FavoriteMovie(FavoriteMovieID),
-    FOREIGN KEY (MovieID) REFERENCES Movie(MovieID)
+CREATE TABLE connection (
+    favoriteMovie_id INT NOT NULL,
+    costumer_id INT NOT NULL,
+    PRIMARY KEY (favoriteMovie_id, costumer_id),
+    FOREIGN KEY (favoriteMovie_id) REFERENCES favoriteMovie(id),
+    FOREIGN KEY (costumer_id) REFERENCES costumer(id)
 );
 
 
