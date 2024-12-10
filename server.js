@@ -1,71 +1,164 @@
 import express from 'express';
+import cors from 'cors';
+import pkg from 'pg';
 
-var app = express();
-app.listen(3002, ()=>{
-console.log('The server is running!!');
+const { Pool } = pkg;
+
+// PostgreSQL-Datenbankverbindung konfigurieren
+const pool = new Pool({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'postgres',
+    password: 'postgres1234',
+    port: 5432, // Standardport für PostgreSQL
 });
 
-// Root endpoint
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+// Port konfigurieren
+const PORT = 3002;
+
+// **Root-Endpunkt**
 app.get('/', (req, res) => {
     res.send('Welcome to the Movie API!');
 });
 
-// Adding new genre
-app.post('/genres', (req, res) => {
-    const genre = req.body;
-    res.send({ message: 'Genre added successfully', genre });
+// **Genre hinzufügen**
+app.post('/genres', async (req, res) => {
+    const { name } = req.body;
+    try {
+        const result = await pool.query('INSERT INTO genre (name) VALUES ($1) RETURNING *', [name]);
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
-// Adding new movie
-app.post('/movies', (req, res) => {
-    const movie = req.body;
-    res.send({ message: 'Movie added successfully', movie });
+// **Alle Genres abrufen**
+app.get('/genres', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM genre');
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
-// Registering new user
-app.post('/user', (req, res) => {
-    const user = req.body;
-    res.send({ message: 'User register successfully', user });
+// **Film hinzufügen**
+app.post('/movies', async (req, res) => {
+    const { name, year, genre_id, costumer_id } = req.body;
+    try {
+        const result = await pool.query(
+            'INSERT INTO movie (name, year, genre_id, costumer_id) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, year, genre_id, costumer_id]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
-// Getting movie with ID
-app.get('/movies/:id', (req, res) => {
-    const movieId = req.params.id;
-    res.send({ message: `Movie with ID ${movieId} retrieved successfully` });
+// **Alle Filme abrufen mit Pagination**
+app.get('/movies', async (req, res) => {
+    const page = parseInt(req.query.page) || 1; // Standard: Seite 1
+    const limit = parseInt(req.query.limit) || 10; // Standard: 10 Filme pro Seite
+    const offset = (page - 1) * limit;
+
+    try {
+        const result = await pool.query('SELECT * FROM movie LIMIT $1 OFFSET $2', [limit, offset]);
+        res.status(200).json({
+            page,
+            limit,
+            total: result.rows.length,
+            movies: result.rows,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
-// Deleting movie by ID
-app.delete('/movies/:id', (req, res) => {
-    const movieId = req.params.id;
-    res.send({ message: `Movie with ID ${movieId} deleted successfully` });
+// **Filme nach Schlüsselwort durchsuchen**
+app.get('/movies/search', async (req, res) => {
+    const keyword = req.query.keyword || '';
+    try {
+        const result = await pool.query(
+            'SELECT * FROM movie WHERE name ILIKE $1 OR CAST(year AS TEXT) ILIKE $1',
+            [`%${keyword}%`]
+        );
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
-// Getting all movies
-app.get('/movies', (req, res) => {
-    res.send({ message: 'All movies retrieved successfully' });
+// **Film nach ID abrufen**
+app.get('/movies/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM movie WHERE id = $1', [id]);
+        if (result.rows.length > 0) {
+            res.status(200).json(result.rows[0]);
+        } else {
+            res.status(404).json({ error: 'Movie not found' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
-// Getting movies by keyword
-app.get('/movies/search', (req, res) => {
-    const keyword = req.query.keyword;
-    res.send({ message: `Movies matching keyword: ${keyword} retrieved successfully` });
+// **Film aktualisieren**
+app.put('/movies/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, year, genre_id } = req.body;
+
+    try {
+        const result = await pool.query(
+            'UPDATE movie SET name = $1, year = $2, genre_id = $3 WHERE id = $4 RETURNING *',
+            [name, year, genre_id, id]
+        );
+
+        if (result.rows.length > 0) {
+            res.status(200).json({ message: 'Movie updated successfully', movie: result.rows[0] });
+        } else {
+            res.status(404).json({ error: 'Movie not found' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
-// Adding movie review
-app.post('/reviews', (req, res) => {
-    const review = req.body;
-    res.send({ message: 'Review added successfully', review });
+// **Film löschen**
+app.delete('/movies/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM movie WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length > 0) {
+            res.status(200).json({ message: 'Movie deleted successfully', movie: result.rows[0] });
+        } else {
+            res.status(404).json({ error: 'Movie not found' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
-// Adding favorite movie for user
-app.post('/favorites', (req, res) => {
-    const favorite = req.body;
-    res.send({ message: 'Favorite movie added successfully', favorite });
+// **Fehlerbehandlung**
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Get favorite movies by username
-app.get('/favorites/:username', (req, res) => {
-    const username = req.params.username;
-    res.send({ message: `Favorite movies for user ${username} retrieved successfully` });
+// Server starten
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });
-
