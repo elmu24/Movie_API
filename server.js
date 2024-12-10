@@ -1,64 +1,71 @@
 import express from 'express';
 
 var app = express();
-app.use(express.json()); // Middleware for parsing JSON bodies
+app.listen(3002, ()=>{
+console.log('The server is running!!');
+});
 
-// Define raw endpoints
+// Root endpoint
+app.get('/', (req, res) => {
+    res.send('Welcome to the Movie API!');
+});
 
-// Add a new genre
+// Adding new genre
 app.post('/genres', (req, res) => {
-    res.send('Add genre endpoint - Placeholder');
+    const genre = req.body;
+    res.send({ message: 'Genre added successfully', genre });
 });
 
-// Add a new movie
+// Adding new movie
 app.post('/movies', (req, res) => {
-    res.send('Add movie endpoint - Placeholder');
+    const movie = req.body;
+    res.send({ message: 'Movie added successfully', movie });
 });
 
-// Register a new user
-app.post('/users', (req, res) => {
-    res.send('Register user endpoint - Placeholder');
+// Registering new user
+app.post('/user', (req, res) => {
+    const user = req.body;
+    res.send({ message: 'User register successfully', user });
 });
 
-// Get a movie by ID
+// Getting movie with ID
 app.get('/movies/:id', (req, res) => {
     const movieId = req.params.id;
-    res.send(`Get movie by ID ${movieId} - Placeholder`);
+    res.send({ message: `Movie with ID ${movieId} retrieved successfully` });
 });
 
-// Delete a movie by ID
+// Deleting movie by ID
 app.delete('/movies/:id', (req, res) => {
     const movieId = req.params.id;
-    res.send(`Delete movie by ID ${movieId} - Placeholder`);
+    res.send({ message: `Movie with ID ${movieId} deleted successfully` });
 });
 
-// Get all movies
+// Getting all movies
 app.get('/movies', (req, res) => {
-    res.send('Get all movies endpoint - Placeholder');
+    res.send({ message: 'All movies retrieved successfully' });
 });
 
-// Get movies by keyword
+// Getting movies by keyword
 app.get('/movies/search', (req, res) => {
     const keyword = req.query.keyword;
-    res.send(`Search movies by keyword: ${keyword} - Placeholder`);
+    res.send({ message: `Movies matching keyword: ${keyword} retrieved successfully` });
 });
 
-// Add a movie review
+// Adding movie review
 app.post('/reviews', (req, res) => {
-    res.send('Add movie review endpoint - Placeholder');
+    const review = req.body;
+    res.send({ message: 'Review added successfully', review });
 });
 
-// Add favorite movie for a user
+// Adding favorite movie for user
 app.post('/favorites', (req, res) => {
-    res.send('Add favorite movie endpoint - Placeholder');
+    const favorite = req.body;
+    res.send({ message: 'Favorite movie added successfully', favorite });
 });
 
 // Get favorite movies by username
 app.get('/favorites/:username', (req, res) => {
     const username = req.params.username;
-    res.send(`Get favorite movies for user ${username} - Placeholder`);
+    res.send({ message: `Favorite movies for user ${username} retrieved successfully` });
 });
 
-app.listen(3001, () => {
-    console.log('The server is running on port 3001!');
-});
