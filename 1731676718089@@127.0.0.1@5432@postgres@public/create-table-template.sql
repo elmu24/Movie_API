@@ -74,3 +74,13 @@ CREATE TABLE connection (
     FOREIGN KEY (favoriteMovie_id) REFERENCES favoriteMovie(id),
     FOREIGN KEY (costumer_id) REFERENCES costumer(id)
 );
+CREATE VIEW user_favorites AS
+SELECT 
+    u.username AS user_name,
+    f.title AS favorite_title,
+    m.name AS movie_name,
+    m.year AS movie_year
+FROM favoriteMovie f
+JOIN connection c ON f.id = c.favoriteMovie_id
+JOIN movie m ON c.movie_id = m.id
+JOIN costumer u ON c.costumer_id = u.id;
