@@ -94,16 +94,29 @@ app.get('/movies', async (req, res) => {
 app.get('/movies/search', async (req, res) => {
     const keyword = req.query.keyword || '';
     try {
-        const result = await pgPool.query(
-            'SELECT * FROM Movie WHERE Name ILIKE $1 OR CAST(Year AS TEXT) ILIKE $1',
-            [`%${keyword}%`]
-        );
+        let result;
+
+        if (!keyword) {
+            // If no keyword is provided, return all movies
+            result = await pgPool.query(
+                'SELECT Name, Year, GenreID FROM Movie'
+            );
+        } else {
+            // If a keyword is provided, perform the search with ILIKE for case-insensitive matching
+            const formattedKeyword = `%${keyword.toLowerCase()}%`;
+            result = await pgPool.query(
+                'SELECT Name, Year, GenreID FROM Movie WHERE LOWER(Name) LIKE $1 OR CAST(Year AS TEXT) LIKE $1',
+                [formattedKeyword]
+            );
+        }
+
         res.status(200).json(result.rows);
     } catch (err) {
         console.error('Error executing query:', err.stack);
         res.status(500).json({ error: 'Database error' });
     }
 });
+
 
 // **Get Movie by ID**
 app.get('/movies/:id', async (req, res) => {
@@ -193,14 +206,40 @@ app.post('/costumer', async (req, res) => {
     }
 });
 
+// Add Movie Review
+app.post('/reviews', async (req, res) => {
+    const { username, stars, desc, movie_id } = req.query;
+
+    try {
+        // Retrieve the UserID based on the provided username
+        const userResult = await pgPool.query('SELECT UserID FROM Users WHERE Username = $1', [username]);
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user_id = userResult.rows[0].userid; // Get the UserID from the result
+
+        // Insert the review into the Review table
+        const result = await pgPool.query(
+            'INSERT INTO Review (MovieID, UserID, Stars, ReviewText) VALUES ($1, $2, $3, $4) RETURNING *',
+            [movie_id, user_id, stars, desc]
+        );
+
+        res.status(201).json({ message: 'Review added successfully!', review: result.rows[0] });
+    } catch (err) {
+        console.error('Error executing query:', err.stack);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
 
 // **Add Favorite Movie**
 app.post('/favorites', async (req, res) => {
-    const { costumer_id, movie_id } = req.query;
+    const { user_id, movie_id } = req.query; // user_id anstelle von costumer_id
     try {
         const result = await pgPool.query(
-            'INSERT INTO Connection_Table (CostumerID, MovieID) VALUES ($1, $2) RETURNING *',
-            [costumer_id, movie_id]
+            'INSERT INTO Connection_Table (UserID, MovieID) VALUES ($1, $2) RETURNING *',
+            [user_id, movie_id]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -209,17 +248,25 @@ app.post('/favorites', async (req, res) => {
     }
 });
 
-// **Get Favorite Movies by Username**
+
 app.get('/favorites/:username', async (req, res) => {
     const { username } = req.params;
     try {
-        const result = await pgPool.query('SELECT * FROM get_user_favorites($1)', [username]);
+        const result = await pgPool.query(
+            'SELECT m.Name, m.Year, m.GenreID ' +
+            'FROM Connection_Table ct ' +
+            'JOIN Users u ON ct.UserID = u.UserID ' +
+            'JOIN Movie m ON ct.MovieID = m.MovieID ' +
+            'WHERE u.Username = $1',
+            [username]
+        );
         res.status(200).json(result.rows);
     } catch (err) {
         console.error('Error executing query:', err.stack);
         res.status(500).json({ error: 'Database error' });
     }
 });
+
 
 // Error Handling
 app.use((err, req, res, next) => {
