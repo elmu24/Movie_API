@@ -1,86 +1,116 @@
--- Tabelle Genre
-CREATE TABLE genre (
-    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
-    name VARCHAR(50) NOT NULL,
-    PRIMARY KEY (id)
+-- Table: Genre
+CREATE TABLE Genre (
+    GenreID INT GENERATED ALWAYS AS IDENTITY,
+    Name VARCHAR(50) NOT NULL UNIQUE,
+    PRIMARY KEY (GenreID)
 );
 
--- Einfügen von Daten in Genre
-INSERT INTO genre (name) VALUES 
-('drama'), ('comedy'), ('scifi'), ('fantasy'), ('action'), ('thriller');
+-- Insert Data in Genre
+INSERT INTO Genre (Name) VALUES 
+('Drama'), ('Comedy'), ('Sci-fi'), ('Fantasy'), ('Action'), ('Thriller');
 
--- Tabelle FavoriteMovie
-CREATE TABLE favoriteMovie (
-    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
-    title VARCHAR(50) NOT NULL,
-    PRIMARY KEY (id)
+
+-- Table: Users
+CREATE TABLE Users (
+    UserID INT GENERATED ALWAYS AS IDENTITY,
+    Name VARCHAR(200) NOT NULL,
+    Username VARCHAR(200) NOT NULL UNIQUE,
+    Password VARCHAR(200) NOT NULL,
+    BirthYear INT NOT NULL,
+    PRIMARY KEY (UserID)
 );
 
--- Tabelle Costumer
-CREATE TABLE costumer (
-    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
-    name VARCHAR(50) NOT NULL,
-    password VARCHAR(50) NOT NULL,
-    birthyear INT,
-    favoriteMovie_id INT,
-    PRIMARY KEY (id),
-    FOREIGN KEY (favoriteMovie_id) REFERENCES favoriteMovie(id)
+-- Insert Data in Users
+INSERT INTO Users (Name, Username, Password, BirthYear) VALUES
+('Reima Riihimäki', 'reima', 'qwerty123', 1986),
+('Lisa Simpson', 'lisa', 'abcdef', 1991),
+('Ben Bossy', 'ben', 'salasana', 1981),
+('Anna Doe', 'anna', '123456', 1990),
+('John Smith', 'john', 'password123', 1995),
+('Emma Brown', 'emma', 'mypassword', 1988),
+('Tom White', 'tom', 'securepass', 2000);
+
+
+-- Table: Movie
+CREATE TABLE Movie (
+    MovieID INT NOT NULL GENERATED ALWAYS AS IDENTITY,
+    GenreID INT,
+    Name VARCHAR(50),
+    Year INT,
+    PRIMARY KEY (MovieID),
+    FOREIGN KEY (GenreID) REFERENCES Genre(GenreID) ON DELETE CASCADE
 );
 
--- Einfügen von Daten in Costumer
-INSERT INTO costumer (name, password, birthyear) VALUES
-('Reima Riihimäki', 'qwerty123', 1986),
-('Lisa Simpson', 'abcdef', 1991),
-('Ben Bossy', 'salasana', 1981);
-
--- Tabelle Movie
-CREATE TABLE movie (
-    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
-    genre_id INT NOT NULL,
-    name VARCHAR(50) NOT NULL,
-    year INT NOT NULL,
-    costumer_id INT,
-    PRIMARY KEY (id),
-    FOREIGN KEY (genre_id) REFERENCES genre(id),
-    FOREIGN KEY (costumer_id) REFERENCES costumer(id)
-);
-
--- Einfügen von Daten in Movie
-INSERT INTO movie (name, year, genre_id) VALUES 
+-- Insert Data in Movie
+INSERT INTO Movie (Name, Year, GenreID) VALUES
 ('Inception', 2010, 5),
 ('The Terminator', 1984, 5),
 ('Tropic Thunder', 2008, 2),
 ('Borat', 2006, 2),
 ('Interstellar', 2014, 1),
-('Joker', 2019, 1);
+('Joker', 2019, 1),
+('Avatar', 2009, 3),
+('Harry Potter', 2001, 4),
+('The Matrix', 1999, 3),
+('Pulp Fiction', 1994, 1),
+('The Dark Knight', 2008, 5);
 
--- Tabelle Review
-CREATE TABLE review (
-    id INT NOT NULL GENERATED ALWAYS AS IDENTITY,
-    movie_id INT NOT NULL,
-    costumer_id INT NOT NULL,
+
+-- Table: Review
+CREATE TABLE Review (
+    ReviewID INT GENERATED ALWAYS AS IDENTITY,
     Stars INT CHECK (Stars BETWEEN 1 AND 5),
     ReviewText VARCHAR(5000),
-    PRIMARY KEY (id),
-    FOREIGN KEY (movie_id) REFERENCES movie(id),
-    FOREIGN KEY (costumer_id) REFERENCES costumer(id)
+    MovieID INT NOT NULL,
+    UserID INT NOT NULL,
+    PRIMARY KEY (ReviewID),
+    FOREIGN KEY (MovieID) REFERENCES Movie(MovieID) ON DELETE CASCADE,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
 );
 
--- Tabelle Connection (Verknüpfungstabelle zwischen FavoriteMovie und Costumer)
-CREATE TABLE connection (
-    favoriteMovie_id INT NOT NULL,
-    costumer_id INT NOT NULL,
-    PRIMARY KEY (favoriteMovie_id, costumer_id),
-    FOREIGN KEY (favoriteMovie_id) REFERENCES favoriteMovie(id),
-    FOREIGN KEY (costumer_id) REFERENCES costumer(id)
+-- Insert Data in Review
+INSERT INTO Review (Stars, ReviewText, MovieID, UserID) VALUES
+(5, 'Amazing movie with great plot!', 1, 1),
+(4, 'Classic action movie!', 2, 2),
+(3, 'Not as funny as I expected.', 3, 3),
+(5, 'Brilliant storytelling!', 5, 4),
+(2, 'Not my taste.', 6, 5);
+
+
+-- Table: FavoriteMovie
+CREATE TABLE FavoriteMovie (
+    FavoriteMovieID INT GENERATED ALWAYS AS IDENTITY,
+    Title VARCHAR(50) NOT NULL UNIQUE,
+    PRIMARY KEY (FavoriteMovieID)
 );
-CREATE VIEW user_favorites AS
-SELECT 
-    u.username AS user_name,
-    f.title AS favorite_title,
-    m.name AS movie_name,
-    m.year AS movie_year
-FROM favoriteMovie f
-JOIN connection c ON f.id = c.favoriteMovie_id
-JOIN movie m ON c.movie_id = m.id
-JOIN costumer u ON c.costumer_id = u.id;
+
+-- Insert Data in FavoriteMovie
+INSERT INTO FavoriteMovie (Title) VALUES
+('Sci-fi Masterpieces'),
+('Comedy Classics'),
+('Drama Favorites'),
+('Action Hits'),
+('Fantasy Adventures');
+
+
+-- Table: Connection_Table (Mapping Users to Favorite Movies and Movies)
+CREATE TABLE Connection_Table (
+    FavoriteMovieID INT,
+    UserID INT,
+    MovieID INT,
+    PRIMARY KEY (FavoriteMovieID, UserID, MovieID),
+    FOREIGN KEY (FavoriteMovieID) REFERENCES FavoriteMovie(FavoriteMovieID) ON DELETE CASCADE,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
+    FOREIGN KEY (MovieID) REFERENCES Movie(MovieID) ON DELETE CASCADE
+);
+
+-- Insert Data in Connection_Table
+INSERT INTO Connection_Table (FavoriteMovieID, UserID, MovieID) VALUES
+(1, 1, 1),
+(2, 2, 2),
+(3, 3, 5),
+(4, 4, 6),
+(5, 5, 7),
+(1, 6, 8),
+(2, 1, 9),
+(3, 2, 10);
