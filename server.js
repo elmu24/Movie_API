@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import pgPool from './pg_connection.js'; // Ensure this file contains your pgPool configuration
+import pgPool from './pg_connection.js'; 
 import bcrypt from 'bcrypt';
 
 const app = express();
@@ -8,9 +8,8 @@ app.use(express.json());
 app.use(cors());
 
 // Start the server
-const PORT = 3002;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(3002, () => {
+    console.log(`Server is running!`);
 });
 
 // Test database connection
@@ -97,12 +96,12 @@ app.get('/movies/search', async (req, res) => {
         let result;
 
         if (!keyword) {
-            // If no keyword is provided, return all movies
+            
             result = await pgPool.query(
                 'SELECT Name, Year, GenreID FROM Movie'
             );
         } else {
-            // If a keyword is provided, perform the search with ILIKE for case-insensitive matching
+            
             const formattedKeyword = `%${keyword.toLowerCase()}%`;
             result = await pgPool.query(
                 'SELECT Name, Year, GenreID FROM Movie WHERE LOWER(Name) LIKE $1 OR CAST(Year AS TEXT) LIKE $1',
@@ -116,7 +115,6 @@ app.get('/movies/search', async (req, res) => {
         res.status(500).json({ error: 'Database error' });
     }
 });
-
 
 // **Get Movie by ID**
 app.get('/movies/:id', async (req, res) => {
@@ -183,17 +181,17 @@ app.post('/costumer', async (req, res) => {
     const { name, username, password, birthyear } = req.query;
 
     try {
-        // Check if the username already exists
+        
         const userExists = await pgPool.query('SELECT * FROM Users WHERE Username = $1', [username]);
         if (userExists.rows.length > 0) {
             return res.status(400).json({ error: 'Username already exists. Please choose a different one.' });
         }
 
-        // Hash the password
+       
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Insert the new user
+        
         const result = await pgPool.query(
             'INSERT INTO Users (Name, Username, Password, BirthYear) VALUES ($1, $2, $3, $4) RETURNING *',
             [name, username, hashedPassword, birthyear]
@@ -211,16 +209,16 @@ app.post('/reviews', async (req, res) => {
     const { username, stars, desc, movie_id } = req.query;
 
     try {
-        // Retrieve the UserID based on the provided username
+        
         const userResult = await pgPool.query('SELECT UserID FROM Users WHERE Username = $1', [username]);
 
         if (userResult.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const user_id = userResult.rows[0].userid; // Get the UserID from the result
+        const user_id = userResult.rows[0].userid; 
 
-        // Insert the review into the Review table
+        
         const result = await pgPool.query(
             'INSERT INTO Review (MovieID, UserID, Stars, ReviewText) VALUES ($1, $2, $3, $4) RETURNING *',
             [movie_id, user_id, stars, desc]
@@ -235,7 +233,7 @@ app.post('/reviews', async (req, res) => {
 
 // **Add Favorite Movie**
 app.post('/favorites', async (req, res) => {
-    const { user_id, movie_id } = req.query; // user_id anstelle von costumer_id
+    const { user_id, movie_id } = req.query; 
     try {
         const result = await pgPool.query(
             'INSERT INTO Connection_Table (UserID, MovieID) VALUES ($1, $2) RETURNING *',
@@ -248,7 +246,7 @@ app.post('/favorites', async (req, res) => {
     }
 });
 
-
+// Get favorite movies by user
 app.get('/favorites/:username', async (req, res) => {
     const { username } = req.params;
     try {
@@ -267,9 +265,10 @@ app.get('/favorites/:username', async (req, res) => {
     }
 });
 
-
 // Error Handling
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err.stack);
     res.status(500).json({ error: 'Something went wrong!' });
 });
+
+
