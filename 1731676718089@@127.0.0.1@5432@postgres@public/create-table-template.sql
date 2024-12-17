@@ -58,15 +58,15 @@ INSERT INTO Movie (Name, Year, GenreID) VALUES
 
 -- Table: Review
 CREATE TABLE Review (
-    ReviewID INT GENERATED ALWAYS AS IDENTITY,
-    Stars INT CHECK (Stars BETWEEN 1 AND 5),
-    ReviewText VARCHAR(5000),
+    ReviewID SERIAL PRIMARY KEY,
     MovieID INT NOT NULL,
-    UserID INT NOT NULL,
-    PRIMARY KEY (ReviewID),
-    FOREIGN KEY (MovieID) REFERENCES Movie(MovieID) ON DELETE CASCADE,
-    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
+    UserID INT NOT NULL,  -- Stelle sicher, dass der richtige Spaltenname verwendet wird
+    Stars INT CHECK (Stars BETWEEN 1 AND 5),
+    ReviewText VARCHAR(500),
+    FOREIGN KEY (MovieID) REFERENCES Movie(MovieID),
+    FOREIGN KEY (UserID) REFERENCES Users(UserID)
 );
+
 
 -- Insert Data in Review
 INSERT INTO Review (Stars, ReviewText, MovieID, UserID) VALUES
@@ -95,22 +95,11 @@ INSERT INTO FavoriteMovie (Title) VALUES
 
 -- Table: Connection_Table (Mapping Users to Favorite Movies and Movies)
 CREATE TABLE Connection_Table (
-    FavoriteMovieID INT,
     UserID INT,
     MovieID INT,
-    PRIMARY KEY (FavoriteMovieID, UserID, MovieID),
-    FOREIGN KEY (FavoriteMovieID) REFERENCES FavoriteMovie(FavoriteMovieID) ON DELETE CASCADE,
-    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
-    FOREIGN KEY (MovieID) REFERENCES Movie(MovieID) ON DELETE CASCADE
+    PRIMARY KEY (UserID, MovieID),
+    FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    FOREIGN KEY (MovieID) REFERENCES Movie(MovieID)
 );
 
--- Insert Data in Connection_Table
-INSERT INTO Connection_Table (FavoriteMovieID, UserID, MovieID) VALUES
-(1, 1, 1),
-(2, 2, 2),
-(3, 3, 5),
-(4, 4, 6),
-(5, 5, 7),
-(1, 6, 8),
-(2, 1, 9),
-(3, 2, 10);
+
